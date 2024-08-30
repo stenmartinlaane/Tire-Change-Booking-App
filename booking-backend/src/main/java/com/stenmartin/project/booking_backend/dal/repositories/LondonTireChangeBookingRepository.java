@@ -1,25 +1,32 @@
 package com.stenmartin.project.booking_backend.dal.repositories;
 
 import com.stenmartin.project.booking_backend.dal.api.LondonTireWorkshopAPIClient;
-import com.stenmartin.project.booking_backend.dal.api.TireWorkshopAPIClient;
-import com.stenmartin.project.booking_backend.domain.repositoryInterfaces.TireChangeBookingRepository;
-import com.stenmartin.project.booking_backend.domain.entity.TireChangeBooking;
-import com.stenmartin.project.booking_backend.dto.TireChangeBookingResponse;
+import com.stenmartin.project.booking_backend.domain.repository.TireChangeTimeRepository;
+import com.stenmartin.project.booking_backend.dto.response.TireChangeSchedulingResponse;
+import com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-public class LondonTireChangeBookingRepository implements TireChangeBookingRepository {
+@Repository
+public class LondonTireChangeBookingRepository implements TireChangeTimeRepository {
 
-    private final TireWorkshopAPIClient tireWorkshopAPIClient = new LondonTireWorkshopAPIClient();
+    private final LondonTireWorkshopAPIClient tireWorkshopAPIClient;
 
-    @Override
-    public List<TireChangeBooking> findAll(String from, String to) {
-        return tireWorkshopAPIClient.getTireChangeTimes(from, to);
+    @Autowired
+    public LondonTireChangeBookingRepository(LondonTireWorkshopAPIClient tireWorkshopAPIClient) {
+        this.tireWorkshopAPIClient = tireWorkshopAPIClient;
     }
 
     @Override
-    public TireChangeBookingResponse RegisterTireChangeBooking(String tireChangeBookingId, String contactInformation) {
-        return tireWorkshopAPIClient.registerTireChangeBooking(tireChangeBookingId, contactInformation);
+    public CompletableFuture<TireChangeTimesResponse> findAllAsync(String from, String to) {
+        return tireWorkshopAPIClient.getTireChangeTimesAsync(from, to);
+    }
+
+    @Override
+    public TireChangeSchedulingResponse scheduleTireChange(String tireChangeBookingId, String contactInformation) {
+        return tireWorkshopAPIClient.scheduleTireChange(tireChangeBookingId, contactInformation);
     }
 
     @Override

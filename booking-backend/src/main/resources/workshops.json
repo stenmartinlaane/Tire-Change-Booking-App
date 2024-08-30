@@ -1,0 +1,20 @@
+{
+  "Workshops": [
+    {
+      "BaseUrl": "http://localhost:9003/",
+      "ApiVersion": "api/v1/",
+      "Address": "London",
+      "Name": "London Workshop",
+      "Id": "009d3f25-cd12-4bf1-abf1-ccbcf9fe736c",
+      "SupportedVehicleTypes": ["Car"]
+    },
+    {
+      "BaseUrl": "http://localhost:9004/",
+      "ApiVersion": "api/v2/",
+      "Address": "Manchester",
+      "Name": "Manchester Workshop",
+      "Id": "e50dc51b-f8e8-4d0c-9921-667601c077f9",
+      "SupportedVehicleTypes": ["Car", "Truck"]
+    }
+  ]
+}

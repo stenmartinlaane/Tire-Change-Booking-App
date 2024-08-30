@@ -1,11 +1,17 @@
 package com.stenmartin.project.booking_backend.dal.api;
 
+import com.stenmartin.project.booking_backend.dal.Mapper;
+import com.stenmartin.project.booking_backend.dal.TireWorkshopLoader;
 import com.stenmartin.project.booking_backend.dal.base.BaseAPIClient;
-import com.stenmartin.project.booking_backend.dal.repositories.LondonTireChangeBookingRepository;
-import com.stenmartin.project.booking_backend.domain.entity.TireChangeBooking;
-import com.stenmartin.project.booking_backend.domain.entity.TireWorkshop;
-import com.stenmartin.project.booking_backend.dto.TireChangeBookingResponse;
+import com.stenmartin.project.booking_backend.dal.entity.TireChangeTime;
+import com.stenmartin.project.booking_backend.dal.entity.TireWorkshop;
+import com.stenmartin.project.booking_backend.dto.response.ErrorResponse;
+import com.stenmartin.project.booking_backend.dto.response.TireChangeSchedulingResponse;
+import jakarta.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -23,56 +29,82 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-public class LondonTireWorkshopAPIClient extends BaseAPIClient implements TireWorkshopAPIClient {
-    private final TireWorkshop tireWorkshop;
+import java.util.concurrent.CompletableFuture;
 
-    public LondonTireWorkshopAPIClient() {
-        tireWorkshop = new TireWorkshop("1", "London Workshop", "London", "http://localhost:9003", List.of(), List.of(), new LondonTireChangeBookingRepository());
+@Component
+public class LondonTireWorkshopAPIClient extends BaseAPIClient implements TireWorkshopAPIClient {
+    private TireWorkshop tireWorkshop;
+    @Getter
+    private final static String WORKSHOP_ID = "009d3f25-cd12-4bf1-abf1-ccbcf9fe736c";
+    private final TireWorkshopLoader tireWorkshopLoader;
+
+    @Autowired
+    public LondonTireWorkshopAPIClient(TireWorkshopLoader tireWorkshopLoader) {
+        this.tireWorkshopLoader = tireWorkshopLoader;
+    }
+
+    @PostConstruct
+    public void init() {
+        this.tireWorkshop = tireWorkshopLoader.findByIdDal(WORKSHOP_ID);
     }
 
     @Override
-    public List<TireChangeBooking> getTireChangeTimes(String from, String until) {
-        String url = tireWorkshop.getBaseUrl() + "/api/v1/tire-change-times/available" + "?" + "from=" + from + "&until=" + until;
-        List<TireChangeBooking> result = new ArrayList<>();
-        try(HttpClient client = HttpClient.newHttpClient()) {
+    public CompletableFuture<com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse> getTireChangeTimesAsync(String from, String until) {
+        String url = tireWorkshop.getBaseUrl() + tireWorkshop.getApiVersion() + "tire-change-times/available" + "?" + "from=" + from + "&until=" + until;
+        System.out.println(url);
+
+        try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI(url))
+                    .uri(URI.create(url))
                     .GET()
                     .header("Accept", "application/xml")
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(response -> {
+                        List<TireChangeTime> result = new ArrayList<>();
+                        if (response.statusCode() == 200) {
+                            try {
+                                JAXBContext context = JAXBContext.newInstance(TireChangeTimesResponse.class);
+                                Unmarshaller unmarshaller = context.createUnmarshaller();
 
-            if (response.statusCode() == 200) {
-                JAXBContext context = JAXBContext.newInstance(TireChangeTimesResponse.class);
-                Unmarshaller unmarshaller = context.createUnmarshaller();
+                                TireChangeTimesResponse tireResponse = (TireChangeTimesResponse) unmarshaller.unmarshal(new StringReader(response.body()));
+                                List<AvailableTime> availableTimes = tireResponse.getAvailableTimes();
 
-                TireChangeTimesResponse tireResponse = (TireChangeTimesResponse) unmarshaller.unmarshal(new StringReader(response.body()));
+                                availableTimes.forEach(availableTime -> result.add(
+                                        new TireChangeTime(
+                                                availableTime.uuid,
+                                                Mapper.tireWorkshopToDto(tireWorkshop),
+                                                ZonedDateTime.parse(availableTime.time, DateTimeFormatter.ISO_ZONED_DATE_TIME)
+                                        )
+                                ));
+                                return (com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse)
+                                        new com.stenmartin.project.booking_backend.dto.response.TireChangeTimesResponse("200", result);
+                            } catch (JAXBException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            System.out.println("GET request failed. Response code: " + response.statusCode());
+                            System.out.println(response.body());
+                        }
 
-                List<AvailableTime> availableTimes = tireResponse.getAvailableTimes();
-                availableTimes.forEach(availableTime -> result.add(
-                        new TireChangeBooking(
-                                availableTime.uuid,
-                                tireWorkshop,
-                                ZonedDateTime.parse(availableTime.time, DateTimeFormatter.ISO_ZONED_DATE_TIME)
-                        )
-                ));
-            } else {
-                System.out.println("GET request failed. Response code: " + response.statusCode());
-                System.out.println(response.body());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+                        return (com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse) new ErrorResponse("500", "Exception");
+                    })
+                    .exceptionally(ex -> {
+                        ex.printStackTrace();
+                        return (com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse) new ErrorResponse("500", "Exception");
+                    });
         }
-        return result;
     }
 
     @Override
-    public TireChangeBookingResponse registerTireChangeBooking(String tireChangeBookingId, String contactInformation) {
-        TireChangeBookingResponse result;
+    public TireChangeSchedulingResponse scheduleTireChange(String tireChangeBookingId, String contactInformation) {
+        TireChangeSchedulingResponse result;
 
-        String url = tireWorkshop.getBaseUrl() + "/api/v1/tire-change-times/" + tireChangeBookingId + "/booking";
+        String url = tireWorkshop.getBaseUrl() + tireWorkshop.getApiVersion() + "tire-change-times/" + tireChangeBookingId + "/booking";
 
+        System.out.println("here");
+        System.out.println(url);
         TireChangeBookingRequest tireChangeBookingRequest = new TireChangeBookingRequest();
         tireChangeBookingRequest.setContactInformation("string");
 
