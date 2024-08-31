@@ -1,8 +1,7 @@
-package com.stenmartin.project.booking_backend.dal;
+package com.stenmartin.project.booking_backend.dal.helper;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.stenmartin.project.booking_backend.domain.repository.TireChangeTimeRepository;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.context.ApplicationContext;
@@ -10,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.util.*;
 
 @Component
@@ -152,7 +150,7 @@ public class TireWorkshopLoader {
         private String address;
         private String baseUrl;
         private String apiVersion;
-        private Set<com.stenmartin.project.booking_backend.dal.TireWorkshopLoader.VehicleType> supportedVehicleTypes;
+        private Set<TireWorkshopLoader.VehicleType> supportedVehicleTypes;
     }
 
 

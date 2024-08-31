@@ -1,10 +1,14 @@
 package com.stenmartin.project.booking_backend.bll.services;
 
+import com.stenmartin.project.booking_backend.bll.BllAutoMapper;
 import com.stenmartin.project.booking_backend.domain.entity.TireWorkshop;
+import com.stenmartin.project.booking_backend.domain.model.DomainResponse;
 import com.stenmartin.project.booking_backend.domain.repository.TireWorkshopRepository;
+import com.stenmartin.project.booking_backend.dto.entity.TireChangeTime;
+import com.stenmartin.project.booking_backend.dto.model.ApiResponse;
+import com.stenmartin.project.booking_backend.dto.model.TireChangeSchedulingResponse;
 import com.stenmartin.project.booking_backend.dto.request.TireChangeSchedulingRequest;
-import com.stenmartin.project.booking_backend.dto.response.TireChangeSchedulingResponse;
-import com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,28 +20,32 @@ import java.util.stream.Collectors;
 @Service
 public class TireChangeBookingService {
 
+    final
+    private BllAutoMapper autoMapper;
     private final List<TireWorkshop> tireWorkshops;
-    public TireChangeBookingService(TireWorkshopRepository tireWorkshopRepository) {
+    public TireChangeBookingService(TireWorkshopRepository tireWorkshopRepository, BllAutoMapper autoMapper) {
         tireWorkshops = tireWorkshopRepository.findAll();
+        this.autoMapper = autoMapper;
     }
 
-    public List<TireChangeTimesResponse> getTireChangeTimes(String from, String to) {
-        List<CompletableFuture<TireChangeTimesResponse>> futures = new ArrayList<>();
+    public List<ApiResponse<List<TireChangeTime>>> getTireChangeTimes(String from, String to) {
+        List<CompletableFuture<DomainResponse<List<com.stenmartin.project.booking_backend.domain.entity.TireChangeTime>>>> futures = new ArrayList<>();
         for (TireWorkshop tireWorkshop : tireWorkshops) {
             futures.add(tireWorkshop.getTireChangeTimesASync(from, to));
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        return futures.stream()
+        var result = futures.stream()
                 .map(CompletableFuture::join)
                 .collect(Collectors.toList());
+        return autoMapper.mapToDto(result);
     }
 
-    public TireChangeSchedulingResponse scheduleTireChangeTime(TireChangeSchedulingRequest request) {
+    public ApiResponse<TireChangeSchedulingResponse> scheduleTireChangeTime(TireChangeSchedulingRequest request) {
         TireWorkshop workshop = tireWorkshops.stream()
                 .filter(tireWorkshop -> Objects.equals(request.getTireWorkshopId(), tireWorkshop.getId()))
                 .findFirst()
                 .orElse(null);
-        workshop.scheduleTireChangeTime(request.getBookingId(), request.getTireWorkshopId());
-        return null;
+        var res = workshop.scheduleTireChangeTime(request.getBookingId(), request.getTireWorkshopId());
+        return autoMapper.mapToDtoTireChangeSchedulingResponse(res);
     }
 }

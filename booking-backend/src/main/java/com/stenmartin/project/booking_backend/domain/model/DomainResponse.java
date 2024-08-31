@@ -1,11 +1,13 @@
-package com.stenmartin.project.booking_backend.dal;
+package com.stenmartin.project.booking_backend.domain.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @AllArgsConstructor
-public class DalResponse<T> {
+@NoArgsConstructor
+public class DomainResponse<T> {
     private T reult;
     private String statusCode;
     private String message;

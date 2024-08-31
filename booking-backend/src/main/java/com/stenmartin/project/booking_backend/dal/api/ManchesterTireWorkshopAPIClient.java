@@ -3,13 +3,13 @@ package com.stenmartin.project.booking_backend.dal.api;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stenmartin.project.booking_backend.dal.model.DalResponse;
 import com.stenmartin.project.booking_backend.dal.Mapper;
-import com.stenmartin.project.booking_backend.dal.TireWorkshopLoader;
+import com.stenmartin.project.booking_backend.dal.helper.TireWorkshopLoader;
 import com.stenmartin.project.booking_backend.dal.base.BaseAPIClient;
 import com.stenmartin.project.booking_backend.dal.entity.TireChangeTime;
 import com.stenmartin.project.booking_backend.dal.entity.TireWorkshop;
-import com.stenmartin.project.booking_backend.dto.response.ErrorResponse;
-import com.stenmartin.project.booking_backend.dto.response.TireChangeSchedulingResponse;
+import com.stenmartin.project.booking_backend.dal.model.TireChangeSchedulingResponse;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,11 +41,11 @@ public class ManchesterTireWorkshopAPIClient extends BaseAPIClient implements Ti
 
     @PostConstruct
     public void init() {
-        this.tireWorkshop = tireWorkshopLoader.findByIdDal(WORKSHOP_ID);
+        this.tireWorkshop = tireWorkshopLoader.findById(WORKSHOP_ID);
     }
 
     @Override
-    public CompletableFuture<com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse> getTireChangeTimesAsync(String from, String until) {
+    public CompletableFuture<DalResponse<List<TireChangeTime>>> getTireChangeTimesAsync(String from, String until) {
         String url = tireWorkshop.getBaseUrl() + tireWorkshop.getApiVersion() + "tire-change-times" + "?" + "from=" + from;
 
         try (HttpClient client = HttpClient.newHttpClient()) {
@@ -78,17 +78,31 @@ public class ManchesterTireWorkshopAPIClient extends BaseAPIClient implements Ti
                                             ZonedDateTime.parse(availableTime.getTime(), DateTimeFormatter.ISO_ZONED_DATE_TIME)
                                     )
                             ));
-                            return (com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse)
-                                    new com.stenmartin.project.booking_backend.dto.response.TireChangeTimesResponse("200", result);
+                            return new DalResponse<List<TireChangeTime>>(
+                                    result,
+                                    "200",
+                                    null,
+                                    true
+                            );
                         } else {
                             System.out.println("GET request failed. Response code: " + response.statusCode());
                             System.out.println(response.body());
-                            return (com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse) new ErrorResponse("500", "Exception");
+                            return new DalResponse<List<TireChangeTime>>(
+                                    null,
+                                    "500",
+                                    "Exception",
+                                    false
+                            );
                         }
                             })
                     .exceptionally(ex -> {
                         ex.printStackTrace();
-                        return (com.stenmartin.project.booking_backend.dto.interfaces.TireChangeTimesResponse) new ErrorResponse("500", "Exception");
+                        return new DalResponse<List<TireChangeTime>>(
+                                null,
+                                "500",
+                                "Exception",
+                                false
+                        );
                     });
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -96,7 +110,7 @@ public class ManchesterTireWorkshopAPIClient extends BaseAPIClient implements Ti
     }
 
     @Override
-    public TireChangeSchedulingResponse scheduleTireChange(String tireChangeBookingId, String contactInformation) {
+    public DalResponse<TireChangeSchedulingResponse> scheduleTireChange(String tireChangeBookingId, String contactInformation) {
         String url = tireWorkshop.getBaseUrl() + tireWorkshop.getApiVersion() + "tire-change-times/" + tireChangeBookingId + "/booking";
 
         TireChangeBookingRequest tireChangeBookingRequest = new TireChangeBookingRequest();
@@ -129,14 +143,13 @@ public class ManchesterTireWorkshopAPIClient extends BaseAPIClient implements Ti
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return new DalResponse<>(
+                new TireChangeSchedulingResponse("tempt", "temp", tireWorkshop),
+                "200",
+                null,
+                true
+        );
     }
-
-    @Override
-    public String getTireWorkshopId() {
-        return tireWorkshop.getId();
-    }
-
 
     @Setter
     @Getter
