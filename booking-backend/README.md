@@ -9,12 +9,12 @@ http://localhost:9001/swagger-ui/index.html
 - run in root: ./mvnw clean install
 
 ### Running
+~~~bash
+./mvnw spring-boot:build-image -DskipTests &&
+docker run -d -p 8080:8080 booking-backend-sten:latest
+~~~
 
 #### Configure 
 Configure data in workshops.json
 When running with docker use http://<host-ip> instead of http://localhost
 
-~~~bash
-./mvnw spring-boot:build-image -DskipTests &&
-docker run -d -p 8080:8080 booking-backend-sten:latest
-~~~

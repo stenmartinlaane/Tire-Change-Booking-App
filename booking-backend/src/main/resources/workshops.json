@@ -1,7 +1,7 @@
 {
   "Workshops": [
     {
-      "BaseUrl": "http://localhost:9003/",
+      "BaseUrl": "http://host.docker.internal:9003/",
       "ApiVersion": "api/v1/",
       "Address": "London",
       "Name": "London Workshop",
@@ -9,7 +9,7 @@
       "SupportedVehicleTypes": ["Car"]
     },
     {
-      "BaseUrl": "http://localhost:9004/",
+      "BaseUrl": "http://host.docker.internal:9004/",
       "ApiVersion": "api/v2/",
       "Address": "Manchester",
       "Name": "Manchester Workshop",

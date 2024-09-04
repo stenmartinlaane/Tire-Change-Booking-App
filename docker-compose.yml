@@ -1,21 +1,20 @@
+version: '3.8'
+
 services:
-  # Service to build the Spring Boot Docker image using Maven
-  builder:
-    image: maven:3.8.4-openjdk-11-slim
-    volumes:
-      - ./booking-backend:/app
-    working_dir: /app
-    command: ./mvnw spring-boot:build-image
-
-  app:
-    image: 'my-application:latest'  #  'docker.io/library/my-application:latest'
+  frontend:
+    image: stenmartinlaane/tire-change-app-frontend:latest
+    container_name: tire-change-frontend
     ports:
-      - "8080:8080"  # Map container port 8080 to host port 8080
+      - "3000:3000"  
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:8080 
     depends_on:
-      - builder  
-    network_mode: host
+      - backend
 
-
-networks:
-  default:
-    name: mynetwork  # Optionally give a custom network name
+  backend:
+    image: stenmartinlaane/tire-change-app-backend:latest
+    container_name: tire-change-backend
+    ports:
+      - "8080:8080" 
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod

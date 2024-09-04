@@ -97,7 +97,7 @@ const FilteringComponent = () => {
                 onChange={setValue}
             />
         </div>
-        <NativeSelect label="Choos vheicle type" value={selectedVehicleType} onChange={(event) => setSelectedVehicleType(event.currentTarget.value)}  data={tireChangeTimesApiResponsesLoading ? [] : getUniqueVehicleTypes()} />
+        <NativeSelect label="Choos vehicle type" value={selectedVehicleType} onChange={(event) => setSelectedVehicleType(event.currentTarget.value)}  data={tireChangeTimesApiResponsesLoading ? [] : getUniqueVehicleTypes()} />
     </div>
   )
 }
