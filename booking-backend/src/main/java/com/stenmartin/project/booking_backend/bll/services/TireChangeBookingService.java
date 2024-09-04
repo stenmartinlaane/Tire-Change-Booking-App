@@ -8,7 +8,6 @@ import com.stenmartin.project.booking_backend.dto.entity.TireChangeTime;
 import com.stenmartin.project.booking_backend.dto.model.ApiResponse;
 import com.stenmartin.project.booking_backend.dto.model.TireChangeSchedulingResponse;
 import com.stenmartin.project.booking_backend.dto.request.TireChangeSchedulingRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,13 +22,14 @@ public class TireChangeBookingService {
     final
     private BllAutoMapper autoMapper;
     private final List<TireWorkshop> tireWorkshops;
+
     public TireChangeBookingService(TireWorkshopRepository tireWorkshopRepository, BllAutoMapper autoMapper) {
         tireWorkshops = tireWorkshopRepository.findAll();
         this.autoMapper = autoMapper;
     }
 
     public List<ApiResponse<List<TireChangeTime>>> getTireChangeTimes(String from, String to) {
-        List<CompletableFuture<DomainResponse<List<com.stenmartin.project.booking_backend.domain.entity.TireChangeTime>>>> futures = new ArrayList<>();
+        var futures = new ArrayList<CompletableFuture<DomainResponse<List<com.stenmartin.project.booking_backend.domain.entity.TireChangeTime>>>>();
         for (TireWorkshop tireWorkshop : tireWorkshops) {
             futures.add(tireWorkshop.getTireChangeTimesASync(from, to));
         }

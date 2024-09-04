@@ -1,11 +1,11 @@
 package com.stenmartin.project.booking_backend.api.controllers;
 
 import com.stenmartin.project.booking_backend.bll.services.TireChangeBookingService;
-import com.stenmartin.project.booking_backend.dto.model.TireWorkshopTireChangeTimesResponse;
+import com.stenmartin.project.booking_backend.dto.entity.TireChangeTime;
 import com.stenmartin.project.booking_backend.dto.model.ErrorResponse;
 import com.stenmartin.project.booking_backend.dto.model.TireChangeSchedulingResponse;
+import com.stenmartin.project.booking_backend.dto.model.TireWorkshopTireChangeTimesResponse;
 import com.stenmartin.project.booking_backend.dto.request.TireChangeSchedulingRequest;
-import com.stenmartin.project.booking_backend.dto.entity.TireChangeTime;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,10 +21,10 @@ import java.util.Objects;
 @RequestMapping("/tire-change-times")
 @RestController
 @ApiResponses({
-        @ApiResponse(responseCode = "500", description = "Internal server error", content = { @Content(mediaType = "application/json",
-                schema = @Schema(implementation = ErrorResponse.class)) }),
-        @ApiResponse(responseCode = "400", description = "Bad Request", content = { @Content(mediaType = "application/json",
-                schema = @Schema(implementation = ErrorResponse.class)) }),
+        @ApiResponse(responseCode = "500", description = "Internal server error", content = {@Content(mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class))}),
+        @ApiResponse(responseCode = "400", description = "Bad Request", content = {@Content(mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class))}),
 })
 public class TireChangeController {
 
@@ -53,24 +53,30 @@ public class TireChangeController {
             @RequestParam(value = "to", required = false, defaultValue = "2030-01-02") String to
     ) {
         List<com.stenmartin.project.booking_backend.dto.model.ApiResponse<List<TireChangeTime>>> response = tireChangeBookingService.getTireChangeTimes(from, to);
+//        response.forEach(listApiResponse -> listApiResponse.getReult().forEach(
+//                x -> System.out.println(x.getId())
+//        ));
+
+        response.forEach(listApiResponse -> System.out.println(listApiResponse.getResult())
+        );
         return ResponseEntity.ok(response);
     }
 
 
     @ApiResponses({
-            @ApiResponse(responseCode = "200", content = { @Content(mediaType = "application/json",
-                    schema = @Schema(implementation = TireChangeSchedulingResponse.class)) }),
+            @ApiResponse(responseCode = "200", content = {@Content(mediaType = "application/json",
+                    schema = @Schema(implementation = TireChangeSchedulingResponse.class))}),
             @ApiResponse(responseCode = "422", description = "The tire change time has already been booked by another contact.",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)) })
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))})
     })
     @PostMapping("/{workshopId}/booking/{bookingId}")
     public ResponseEntity<?> scheduleTireChangeTime(@PathVariable String workshopId, @PathVariable String bookingId,
-                                                       @RequestParam(value = "contactInfo", required = true) String contactInfo) {
+                                                    @RequestParam(value = "contactInfo", required = true) String contactInfo) {
         var response = tireChangeBookingService.scheduleTireChangeTime(new TireChangeSchedulingRequest(workshopId, bookingId, contactInfo));
 
         if (response.isSuccess()) {
-            return ResponseEntity.ok(response.getReult());
+            return ResponseEntity.ok(response.getResult());
         } else if (Objects.equals(response.getStatusCode(), "422")) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY) // Assuming response.getCode() returns a valid HttpStatus code
                     .body(response);

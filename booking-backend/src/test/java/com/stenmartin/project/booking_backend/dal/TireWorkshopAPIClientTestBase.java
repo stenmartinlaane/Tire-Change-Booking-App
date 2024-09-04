@@ -14,7 +14,7 @@ public abstract class TireWorkshopAPIClientTestBase {
     @Test
     public void getsAllOfTheData() {
         TireWorkshopAPIClient client = createClient();
-        var tireChangeTimes = client.getTireChangeTimesAsync("2006-01-02", "2030-01-02").join().getReult();
+        var tireChangeTimes = client.getTireChangeTimesAsync("2006-01-02", "2030-01-02").join().getResult();
 //        tireChangeTimes.forEach(System.out::println);
         assertThat(tireChangeTimes).isNotNull();
     }
@@ -22,10 +22,10 @@ public abstract class TireWorkshopAPIClientTestBase {
     @Test
     public void insertNewData() {
         TireWorkshopAPIClient client = createClient();
-        var tireChangeTimes = client.getTireChangeTimesAsync("2006-01-02", "2030-01-02").join().getReult();
+        var tireChangeTimes = client.getTireChangeTimesAsync("2006-01-02", "2030-01-02").join().getResult();
         String id = tireChangeTimes.getFirst().getId(); // Use get(0) instead of getFirst()
         client.scheduleTireChange(id, "example@gmail.com");
-        String secondId = client.getTireChangeTimesAsync("2006-01-02", "2030-01-02").join().getReult().getFirst().getId(); // Use get(0) instead of getFirst()
+        String secondId = client.getTireChangeTimesAsync("2006-01-02", "2030-01-02").join().getResult().getFirst().getId(); // Use get(0) instead of getFirst()
         assertThat(id).isNotEqualTo(secondId);
     }
 }

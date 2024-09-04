@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import '@mantine/core/styles.css';
+import '@mantine/dates/styles.css';
+
+import StateComponent from "../context/StateComponent";
+
+import { ToastContainer } from "react-toastify";
+import "./globals.css";
+import "react-toastify/dist/ReactToastify.css";
+import { MantineProvider } from "@mantine/core";
+import { ColorSchemeScript } from '@mantine/core';
+import { Suspense } from 'react';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,7 +27,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
-    </html>
+      <head>
+        <ColorSchemeScript />
+      </head>
+    <body>
+    <Suspense fallback={<div>Loading...</div>}>
+    <div className="bg-white w-full h-screen border-full flex flex-col">
+          <StateComponent>
+            <div className="flex flex-col w-full h-full flex-grow">
+              <main className="grow flex-1 w-full h-50 bg-background py-4">
+              <MantineProvider>
+                 { children}
+                </MantineProvider>
+              </main>
+            </div>
+          </StateComponent>
+      </div>
+    </Suspense>
+      <ToastContainer />
+    </body>
+  </html>
   );
 }

@@ -31,6 +31,10 @@ public class TireWorkshop {
         return repository.findAllAsync(from, to);
     }
 
+    public CompletableFuture<DomainResponse<List<TireChangeTime>>> getTireChangeTimesASync() {
+        return getTireChangeTimesASync("2006-01-02", "2030-01-02");
+    }
+
     public DomainResponse<TireChangeSchedulingResponse> scheduleTireChangeTime(String bookingId, String contactInfo) {
         return repository.scheduleTireChange(bookingId, contactInfo);
     }

@@ -26,7 +26,8 @@ public class LondonTireChangeBookingRepository implements TireChangeTimeReposito
 
     @Override
     public CompletableFuture<DomainResponse<List<TireChangeTime>>> findAllAsync(String from, String to) {
-        return tireWorkshopAPIClient.getTireChangeTimesAsync(from, to).thenApply(autoMapper::mapTireChangeTimeListToDomain);
+        var res = tireWorkshopAPIClient.getTireChangeTimesAsync(from, to).join();
+        return tireWorkshopAPIClient.getTireChangeTimesAsync(from, to).thenApply(autoMapper::mapToDomainTireChangeTimes);
     }
 
     @Override

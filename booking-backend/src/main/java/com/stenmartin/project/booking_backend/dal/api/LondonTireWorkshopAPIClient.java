@@ -1,11 +1,11 @@
 package com.stenmartin.project.booking_backend.dal.api;
 
-import com.stenmartin.project.booking_backend.dal.model.DalResponse;
 import com.stenmartin.project.booking_backend.dal.Mapper;
-import com.stenmartin.project.booking_backend.dal.helper.TireWorkshopLoader;
 import com.stenmartin.project.booking_backend.dal.base.BaseAPIClient;
 import com.stenmartin.project.booking_backend.dal.entity.TireChangeTime;
 import com.stenmartin.project.booking_backend.dal.entity.TireWorkshop;
+import com.stenmartin.project.booking_backend.dal.helper.TireWorkshopLoader;
+import com.stenmartin.project.booking_backend.dal.model.DalResponse;
 import com.stenmartin.project.booking_backend.dal.model.TireChangeSchedulingResponse;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -51,63 +51,36 @@ public class LondonTireWorkshopAPIClient extends BaseAPIClient implements TireWo
     @Override
     public CompletableFuture<DalResponse<List<TireChangeTime>>> getTireChangeTimesAsync(String from, String until) {
         String url = tireWorkshop.getBaseUrl() + tireWorkshop.getApiVersion() + "tire-change-times/available" + "?" + "from=" + from + "&until=" + until;
-        System.out.println(url);
 
         try (HttpClient client = HttpClient.newHttpClient()) {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .GET()
-                    .header("Accept", "application/xml")
-                    .build();
+            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Accept", "application/xml").build();
 
-            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenApply(response -> {
-                        List<TireChangeTime> result = new ArrayList<>();
-                        if (response.statusCode() == 200) {
-                            try {
-                                JAXBContext context = JAXBContext.newInstance(TireChangeTimesResponse.class);
-                                Unmarshaller unmarshaller = context.createUnmarshaller();
+            return client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(response -> {
+                List<TireChangeTime> result = new ArrayList<>();
+                if (response.statusCode() == 200) {
+                    try {
+                        JAXBContext context = JAXBContext.newInstance(TireChangeTimesResponse.class);
+                        Unmarshaller unmarshaller = context.createUnmarshaller();
 
-                                TireChangeTimesResponse tireResponse = (TireChangeTimesResponse) unmarshaller.unmarshal(new StringReader(response.body()));
-                                List<AvailableTime> availableTimes = tireResponse.getAvailableTimes();
-
-                                availableTimes.forEach(availableTime -> result.add(
-                                        new TireChangeTime(
-                                                availableTime.uuid,
-                                                Mapper.tireWorkshopToDto(tireWorkshop),
-                                                ZonedDateTime.parse(availableTime.time, DateTimeFormatter.ISO_ZONED_DATE_TIME)
-                                        )
-                                ));
-                                return new DalResponse<List<TireChangeTime>>(
-                                        result,
-                                        "200",
-                                        null,
-                                        true
-                                );
-                            } catch (JAXBException e) {
-                                e.printStackTrace();
-                            }
-                        } else {
-                            System.out.println("GET request failed. Response code: " + response.statusCode());
-                            System.out.println(response.body());
+                        TireChangeTimesResponse tireResponse = (TireChangeTimesResponse) unmarshaller.unmarshal(new StringReader(response.body()));
+                        List<AvailableTime> availableTimes = tireResponse.getAvailableTimes();
+                        if (availableTimes != null) {
+                            availableTimes.forEach(availableTime -> result.add(new TireChangeTime(availableTime.uuid, Mapper.tireWorkshopToDto(tireWorkshop), ZonedDateTime.parse(availableTime.time, DateTimeFormatter.ISO_ZONED_DATE_TIME))));
                         }
 
-                        return new DalResponse<List<TireChangeTime>>(
-                                null,
-                                "500",
-                                "Exception",
-                                false
-                        );
-                    })
-                    .exceptionally(ex -> {
-                        ex.printStackTrace();
-                        return new DalResponse<List<TireChangeTime>>(
-                                null,
-                                "500",
-                                "Exception",
-                                false
-                        );
-                    });
+                        return new DalResponse<List<TireChangeTime>>(result, "200", "success", true, tireWorkshop);
+                    } catch (JAXBException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    System.out.println("GET request failed. Response code: " + response.statusCode());
+                }
+
+                return new DalResponse<List<TireChangeTime>>(null, "500", "Exception", false, tireWorkshop);
+            }).exceptionally(ex -> {
+                ex.printStackTrace();
+                return new DalResponse<List<TireChangeTime>>(null, "500", "Exception", false, tireWorkshop);
+            });
         }
     }
 
@@ -117,7 +90,6 @@ public class LondonTireWorkshopAPIClient extends BaseAPIClient implements TireWo
 
         String url = tireWorkshop.getBaseUrl() + tireWorkshop.getApiVersion() + "tire-change-times/" + tireChangeBookingId + "/booking";
 
-        System.out.println("here");
         System.out.println(url);
         TireChangeBookingRequest tireChangeBookingRequest = new TireChangeBookingRequest();
         tireChangeBookingRequest.setContactInformation("string");
@@ -125,6 +97,9 @@ public class LondonTireWorkshopAPIClient extends BaseAPIClient implements TireWo
         JAXBContext context = null;
         String xmlString = "";
         try {
+
+
+
             context = JAXBContext.newInstance(TireChangeBookingRequest.class);
             Marshaller marshaller = context.createMarshaller();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
@@ -139,31 +114,20 @@ public class LondonTireWorkshopAPIClient extends BaseAPIClient implements TireWo
         }
 
         // Print or use the generated XML string
-        try(HttpClient client = HttpClient.newHttpClient()) {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI(url))
-                    .PUT(HttpRequest.BodyPublishers.ofString(xmlString))
-                    .header("Content-Type", "application/xml")
-                    .header("Accept", "application/xml")
-                    .build();
+        try (HttpClient client = HttpClient.newHttpClient()) {
+            HttpRequest request = HttpRequest.newBuilder().uri(new URI(url)).PUT(HttpRequest.BodyPublishers.ofString(xmlString)).header("Content-Type", "application/xml").header("Accept", "application/xml").build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) { // HTTP OK
-//                result = new TireChangeBookingResponse();
+
             } else {
                 System.out.println("GET request failed. Response code: " + response.statusCode());
-                System.out.println(response.body());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return new DalResponse<>(
-                new TireChangeSchedulingResponse("tempt", "temp", tireWorkshop),
-                "200",
-                null,
-                true
-        );
+        return new DalResponse<>(new TireChangeSchedulingResponse("tempt", "temp", tireWorkshop), "200", null, true, tireWorkshop);
     }
 
     @Setter
@@ -184,10 +148,7 @@ public class LondonTireWorkshopAPIClient extends BaseAPIClient implements TireWo
 
         @Override
         public String toString() {
-            return "AvailableTime{" +
-                    "uuid='" + uuid + '\'' +
-                    ", time='" + time + '\'' +
-                    '}';
+            return "AvailableTime{" + "uuid='" + uuid + '\'' + ", time='" + time + '\'' + '}';
         }
     }
 

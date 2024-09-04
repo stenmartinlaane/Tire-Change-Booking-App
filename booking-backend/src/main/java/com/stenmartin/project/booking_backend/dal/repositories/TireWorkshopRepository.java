@@ -4,10 +4,11 @@ import com.stenmartin.project.booking_backend.dal.helper.DalAutoMapper;
 import com.stenmartin.project.booking_backend.dal.helper.TireWorkshopLoader;
 import com.stenmartin.project.booking_backend.domain.entity.TireWorkshop;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Component
+@Repository
 public class TireWorkshopRepository implements com.stenmartin.project.booking_backend.domain.repository.TireWorkshopRepository {
 
     private final TireWorkshopLoader tireWorkshopLoader;
@@ -27,7 +28,6 @@ public class TireWorkshopRepository implements com.stenmartin.project.booking_ba
     public TireWorkshop findById(String id) {
         return autoMapper.mapToDomain(tireWorkshopLoader.findById(id));
     }
-
 
 
 }

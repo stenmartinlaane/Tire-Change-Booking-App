@@ -3,12 +3,12 @@ package com.stenmartin.project.booking_backend.dal.api;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.stenmartin.project.booking_backend.dal.model.DalResponse;
 import com.stenmartin.project.booking_backend.dal.Mapper;
-import com.stenmartin.project.booking_backend.dal.helper.TireWorkshopLoader;
 import com.stenmartin.project.booking_backend.dal.base.BaseAPIClient;
 import com.stenmartin.project.booking_backend.dal.entity.TireChangeTime;
 import com.stenmartin.project.booking_backend.dal.entity.TireWorkshop;
+import com.stenmartin.project.booking_backend.dal.helper.TireWorkshopLoader;
+import com.stenmartin.project.booking_backend.dal.model.DalResponse;
 import com.stenmartin.project.booking_backend.dal.model.TireChangeSchedulingResponse;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
@@ -65,43 +65,58 @@ public class ManchesterTireWorkshopAPIClient extends BaseAPIClient implements Ti
                             List<TireChangeTimesResponse> tireResponses = null;
                             try {
                                 tireResponses = objectMapper.readValue(response.body(),
-                                        new TypeReference<>() {});
+                                        new TypeReference<>() {
+                                        });
                             } catch (JsonProcessingException e) {
                                 throw new RuntimeException(e);
                             }
-                            tireResponses = tireResponses.stream().filter(TireChangeTimesResponse::isAvailable).toList();
 
-                            tireResponses.forEach(availableTime -> result.add(
-                                    new TireChangeTime(
-                                            String.valueOf(availableTime.getId()),
-                                            Mapper.tireWorkshopToDto(tireWorkshop),
-                                            ZonedDateTime.parse(availableTime.getTime(), DateTimeFormatter.ISO_ZONED_DATE_TIME)
-                                    )
-                            ));
+                            ZonedDateTime untilDate = ZonedDateTime.parse(until + "T00:00:00Z", DateTimeFormatter.ISO_ZONED_DATE_TIME);
+
+                            if (tireResponses != null) {
+                                tireResponses = tireResponses.stream().filter(TireChangeTimesResponse::isAvailable)
+                                        .filter(availableTime ->
+                                        {
+                                            ZonedDateTime availableTimeDate = ZonedDateTime.parse(availableTime.getTime(), DateTimeFormatter.ISO_ZONED_DATE_TIME);
+                                            return (untilDate.isAfter(availableTimeDate) || untilDate.isEqual(availableTimeDate));
+                                        }).toList();;
+                            }
+
+                            if (tireResponses != null) {
+                                tireResponses.forEach(availableTime -> result.add(
+                                        new TireChangeTime(
+                                                String.valueOf(availableTime.getId()),
+                                                Mapper.tireWorkshopToDto(tireWorkshop),
+                                                ZonedDateTime.parse(availableTime.getTime(), DateTimeFormatter.ISO_ZONED_DATE_TIME)
+                                        )
+                                ));
+                            }
                             return new DalResponse<List<TireChangeTime>>(
                                     result,
                                     "200",
-                                    null,
-                                    true
+                                    "success",
+                                    true,
+                                    tireWorkshop
                             );
                         } else {
                             System.out.println("GET request failed. Response code: " + response.statusCode());
-                            System.out.println(response.body());
                             return new DalResponse<List<TireChangeTime>>(
                                     null,
                                     "500",
                                     "Exception",
-                                    false
+                                    false,
+                                    tireWorkshop
                             );
                         }
-                            })
+                    })
                     .exceptionally(ex -> {
                         ex.printStackTrace();
                         return new DalResponse<List<TireChangeTime>>(
                                 null,
                                 "500",
                                 "Exception",
-                                false
+                                false,
+                                tireWorkshop
                         );
                     });
         } catch (URISyntaxException e) {
@@ -124,7 +139,7 @@ public class ManchesterTireWorkshopAPIClient extends BaseAPIClient implements Ti
             throw new RuntimeException(e);
         }
 
-        try(HttpClient client = HttpClient.newHttpClient()) {
+        try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(new URI(url))
                     .POST(HttpRequest.BodyPublishers.ofString(jsonString))
@@ -138,7 +153,6 @@ public class ManchesterTireWorkshopAPIClient extends BaseAPIClient implements Ti
                 objectMapper.readValue(response.body(), TireChangeTimesResponse.class);
             } else {
                 System.out.println("GET request failed. Response code: " + response.statusCode());
-                System.out.println(response.body());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -147,7 +161,8 @@ public class ManchesterTireWorkshopAPIClient extends BaseAPIClient implements Ti
                 new TireChangeSchedulingResponse("tempt", "temp", tireWorkshop),
                 "200",
                 null,
-                true
+                true,
+                tireWorkshop
         );
     }
 
